@@ -11,11 +11,12 @@ import (
 	"golang.org/x/net/html"
 )
 
-func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16) {
+func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, keywords []string) {
 
 	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
 	ch1 := make(chan []byte)
+	urlLinkFreq := make(map[string]int)
 
 	q.Enqueue(initialUrl)
 
@@ -34,12 +35,13 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16) {
 		x := <- ch1
 
 		// fmt.Println(string(x))
-		ParseHTML(currUrl, x, maxTokensPerPage, &q)
+		ParseHTML(currUrl, x, maxTokensPerPage, &q, &urlLinkFreq, keywords)
 
 
 	}
 
-	defer fmt.Println(seen.Size())
+	defer fmt.Println("Pages Scraped:", seen.Size())
+	defer fmt.Println(urlLinkFreq)
 	fmt.Println("Finished Crawling")
 
 }
@@ -64,10 +66,11 @@ func ScrapeOnePage(url string, c chan []byte, q* datastructures.Queue) {
 
 }
 
-func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Queue) {
+func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Queue, m* map[string]int, keywords []string) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
+	var linksNo int = 0
 
 	for tokens < maxTokens {
 
@@ -86,9 +89,10 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 
 				ok, url := getLink(token)
 
-				if ok {
-					fmt.Println(ok, url)
+				if ok && HasKeyWords(url, keywords) {
+					// fmt.Println(ok, url)
 					q.Enqueue(url)
+					linksNo++
 				}
 
 				// fmt.Println(ok, tokens, url)
@@ -100,6 +104,8 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 		tokens++
 
 	}
+
+	(*m)[url] = linksNo
 
 }
 
@@ -125,4 +131,18 @@ func getLink(token html.Token) (ok bool, url string) {
 
 	return ok, url
 
+}
+
+func HasKeyWords (url string, keywords []string) bool {
+
+	hasKeywords := false
+
+	for _, word := range keywords {
+		if strings.Contains(url, word) {
+			hasKeywords = true
+			break
+		}
+	}
+
+	return hasKeywords
 }
