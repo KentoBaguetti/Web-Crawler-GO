@@ -3,31 +3,18 @@ package main
 import (
 	"fmt"
 
-	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
 	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
 )
 
 func main() {
+	
 	fmt.Println("Init")
+	defer fmt.Println("Finished")
 
-	q := datastructures.Queue{Elements: make([] string, 0), Length: 0}
+	// testLink := "https://github.com/KentoBaguetti/Web-Crawler-GO"
+	testLink := "https://www.kentarobarnes.com/"
 
-	q.Enqueue("Hello")
-	q.Enqueue("Kentaro")
-	q.Dequeue()
-
-	fmt.Println(q.Elements)
-
-	s := datastructures.Set{Elements: make(map[string]bool, 0), Length: 0}
-
-	s.Add("testUrl")
-	s.Add("testUrl")
-
-	fmt.Println(s.Elements)
-	fmt.Println(s.Elements["testUrl"])
-	fmt.Println(s.Elements["kentaro"])
-
-	scraper.SimpleScrape("https://www.kentarobarnes.com/")
+	scraper.Crawl(testLink, 1, 0)
 
 }
 
