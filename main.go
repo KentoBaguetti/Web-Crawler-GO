@@ -11,10 +11,10 @@ func main() {
 	fmt.Println("Init")
 	defer fmt.Println("Finished")
 
-	// testLink := "https://github.com/KentoBaguetti/Web-Crawler-GO"
-	testLink := "https://www.kentarobarnes.com/"
+	testLink := "https://en.wikipedia.org/wiki/Japan"
+	// testLink := "https://www.kentarobarnes.com/"
 
-	scraper.Crawl(testLink, 1, 0)
+	scraper.Crawl(testLink, 500, 50)
 
 }
 
