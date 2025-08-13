@@ -1,6 +1,6 @@
 # Web-Crawler-GO
 
-## Web cralwer made with Go and Colly
+## Web cralwer
 
 Given a starting link, the web crawler will search the given page for other links with specific keywords. Then search those links with Breath-First Search
 
