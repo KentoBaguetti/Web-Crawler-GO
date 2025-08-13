@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
+	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
 	"github.com/KentoBaguetti/Web-Crawler-GO/utils"
 )
 
@@ -28,6 +29,8 @@ func main() {
 	fmt.Println(s.Elements["kentaro"])
 
 	utils.TestFunction()
+
+	scraper.SimpleScrape("https://en.wikipedia.org/wiki/Japan")
 
 }
 
