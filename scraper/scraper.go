@@ -21,27 +21,30 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16) {
 
 	for q.Size() > 0 && seen.Size() < int(maxCrawlPages) {
 		
-		temp := q.Dequeue()
-
-		if seen.Contains(temp) {
+		currUrl := q.Dequeue()
+		
+		if seen.Contains(currUrl) {
 			continue
 		}
-		
-		go ScrapeOnePage(temp, ch1)
 
-		// x := <- ch1
+		seen.Add(currUrl)
+
+		go ScrapeOnePage(currUrl, ch1, &q)
+
+		x := <- ch1
 
 		// fmt.Println(string(x))
+		ParseHTML(currUrl, x, maxTokensPerPage, &q)
 
-		seen.Add(temp)
 
 	}
 
+	defer fmt.Println(seen.Size())
 	fmt.Println("Finished Crawling")
 
 }
 
-func ScrapeOnePage(url string, c chan []byte) {
+func ScrapeOnePage(url string, c chan []byte, q* datastructures.Queue) {
 
 	resp, err := http.Get(url)
 	
@@ -83,11 +86,16 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 
 				ok, url := getLink(token)
 
-				fmt.Println(ok, url)
+				if ok {
+					fmt.Println(ok, url)
+					q.Enqueue(url)
+				}
 
-			}
+				// fmt.Println(ok, tokens, url)
 
-		}
+			} 
+
+		} 
 
 		tokens++
 
@@ -112,8 +120,6 @@ func getLink(token html.Token) (ok bool, url string) {
 			url = t.Val
 					
 		}
-
-		fmt.Println("token")
 
 	}
 

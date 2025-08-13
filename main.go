@@ -8,13 +8,13 @@ import (
 
 func main() {
 	
-	fmt.Println("Init")
-	defer fmt.Println("Finished")
+	fmt.Println("Init main")
+	defer fmt.Println("Finished main")
 
 	testLink := "https://en.wikipedia.org/wiki/Japan"
 	// testLink := "https://www.kentarobarnes.com/"
 
-	scraper.Crawl(testLink, 500, 50)
+	scraper.Crawl(testLink, 5, 2500)
 
 }
 
