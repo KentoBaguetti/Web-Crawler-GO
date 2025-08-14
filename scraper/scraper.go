@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
 	"golang.org/x/net/html"
@@ -16,6 +17,10 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, key
 	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
 	ch1 := make(chan []byte)
+
+	parseComplete := make(chan bool)
+	var mux sync.Mutex
+
 	urlLinkFreq := make(map[string]int)
 
 	q.Enqueue(initialUrl)
@@ -34,9 +39,14 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, key
 
 		x := <- ch1
 
-		// fmt.Println(string(x))
-		ParseHTML(currUrl, x, maxTokensPerPage, &q, &urlLinkFreq, keywords)
+		go func (url string, content []byte) {
+			mux.Lock()
+			ParseHTML(url, content, maxTokensPerPage, &q, &urlLinkFreq, keywords)
+			mux.Unlock()
+			parseComplete <- true
+		}(currUrl, x)
 
+		<-parseComplete
 
 	}
 

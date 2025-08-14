@@ -24,4 +24,8 @@ Building it with lightweight packages allowed me to understand more of smaller c
 
 The crawler uses the Breadth-First Search algorithm, that way links that are "closer" to the initial link are searched first. After I'd like to try out different search algorithms, such as combining BFS with DFS, changing algorithm based on certain conditions. <br>
 
-I also will implement a database to store the scraped links.
+I also will implement a database to store the scraped links. <br><br>
+
+### Things I want to add:
+
+Use the worker pool pattern to be able to process multple Urls simultaneousely
