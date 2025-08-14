@@ -22,6 +22,6 @@ I chose to build the project in GO as I found the its goroutines to be a an easy
 It is also lightweight for crawling, as I was able to build the project with simple packages without the requirement of anything heavy like Colly.
 Building it with lightweight packages allowed me to understand more of smaller components of crawling. Because of its simplicity, I can also scale it in the future quite easily. <br>
 
-The crawler uses the Breadth-First Search algorithm, that way links that are "closer" to the initial link are searched first. After I'd like to tr out different search algorithms, such as combining BFS with DFS, changing algorithm based on certain conditions. <br>
+The crawler uses the Breadth-First Search algorithm, that way links that are "closer" to the initial link are searched first. After I'd like to try out different search algorithms, such as combining BFS with DFS, changing algorithm based on certain conditions. <br>
 
 I also will implement a database to store the scraped links.
