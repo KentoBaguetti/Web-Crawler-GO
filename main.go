@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
 )
@@ -9,6 +10,8 @@ import (
 func main() {
 	
 	fmt.Println("Init main")
+	start := time.Now()
+
 	defer fmt.Println("Finished main")
 
 	//testLink := "https://en.wikipedia.org/wiki/Japan"
@@ -16,7 +19,11 @@ func main() {
 	// testLink := "https://www.cs.ubc.ca/"
 	keywords := [2]string{"computer", "science"}
 
-	scraper.Crawl(testLink, 5, 2500, keywords[:])
+	scraper.Crawl(testLink, 100, 2500, keywords[:])
+
+	t := time.Now()
+
+	fmt.Println(t.Sub(start))
 
 }
 
