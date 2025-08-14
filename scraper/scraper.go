@@ -25,6 +25,7 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, key
 
 	q.Enqueue(initialUrl)
 
+	// bfs loop
 	for q.Size() > 0 && seen.Size() < int(maxCrawlPages) {
 		
 		currUrl := q.Dequeue()
@@ -35,10 +36,12 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, key
 
 		seen.Add(currUrl)
 
+		// use a goroutine to scrape the first page
 		go ScrapeOnePage(currUrl, ch1, &q)
 
 		x := <- ch1
 
+		// once a page is scraped, start parsing it while a new page is being scraped
 		go func (url string, content []byte) {
 			mux.Lock()
 			ParseHTML(url, content, maxTokensPerPage, &q, &urlLinkFreq, keywords)
@@ -66,6 +69,7 @@ func ScrapeOnePage(url string, c chan []byte, q* datastructures.Queue) {
 
 	defer resp.Body.Close()
 
+	// read the body of the html
 	body, err := io.ReadAll(resp.Body)
 
 	if err != nil {
@@ -78,10 +82,12 @@ func ScrapeOnePage(url string, c chan []byte, q* datastructures.Queue) {
 
 func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Queue, m* map[string]int, keywords []string) {
 
+	// tokenize the html pge based on bytes
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
 	var linksNo int = 0
 
+	// only search a set number of tokens per html page
 	for tokens < maxTokens {
 
 		tt := z.Next()
@@ -93,6 +99,7 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 
 		token := z.Token()
 
+		// only queue links (anchor tags)
 		if token.Type == html.StartTagToken {
 
 			if token.Data == "a" {
@@ -100,12 +107,9 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 				ok, url := getLink(token)
 
 				if ok && HasKeyWords(url, keywords) {
-					// fmt.Println(ok, url)
 					q.Enqueue(url)
 					linksNo++
 				}
-
-				// fmt.Println(ok, tokens, url)
 
 			} 
 
@@ -143,6 +147,9 @@ func getLink(token html.Token) (ok bool, url string) {
 
 }
 
+// return true if the url contains keywords from the keywords string
+// should probably modify this function to return an integer based on the number of matching keywords
+// eg more keywords == beter score
 func HasKeyWords (url string, keywords []string) bool {
 
 	hasKeywords := false
@@ -155,4 +162,5 @@ func HasKeyWords (url string, keywords []string) bool {
 	}
 
 	return hasKeywords
+	
 }
