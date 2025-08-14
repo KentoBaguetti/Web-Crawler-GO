@@ -2,6 +2,8 @@ package datastructures
 
 import "sync"
 
+// switch to use RWMutex as reads dominate writes
+
 type Set struct {
 	Elements map[string]bool
 	Length int

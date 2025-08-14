@@ -16,7 +16,7 @@ func Crawl(initialUrl string, maxCrawlPages uint16, maxTokensPerPage uint16, key
 
 	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
-	ch1 := make(chan []byte)
+	ch1 := make(chan []byte) // chnage this to a buffered channel to allow for workers
 
 	parseComplete := make(chan bool)
 	var mux sync.Mutex
@@ -162,5 +162,5 @@ func HasKeyWords (url string, keywords []string) bool {
 	}
 
 	return hasKeywords
-	
+
 }
