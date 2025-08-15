@@ -28,4 +28,6 @@ I also will implement a database to store the scraped links. <br><br>
 
 ### Things I want to add:
 
-Use the worker pool pattern to be able to process multple Urls simultaneousely
+- Use the worker pool pattern to be able to process multple Urls simultaneousely
+- Feed the data into an inverted index db in mongo
+- Add a more refined version of keyword matching
