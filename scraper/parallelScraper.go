@@ -18,13 +18,23 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
 
+
+
 	q.Enqueue(initialUrl)
 
 	for q.Length > 0 && seen.Length < int(maxCrawlPages) {
 
-		
+		currUrl := q.Dequeue()
+
+		if seen.Contains(currUrl) {
+			continue
+		}
+
+		worker(currUrl, &q, &seen)
 
 	}
+
+	fmt.Println(seen.Elements)
 
 }
 
