@@ -15,24 +15,19 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	fmt.Println("Start ParallelCrawl")
 	defer fmt.Println("Finished ParallelCrawl")
 
-	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
+	jobs := make(chan string)
+	done := make(chan bool)
 
-
-
-	q.Enqueue(initialUrl)
-
-	for q.Length > 0 && seen.Length < int(maxCrawlPages) {
-
-		currUrl := q.Dequeue()
-
-		if seen.Contains(currUrl) {
-			continue
-		}
-
-		worker(currUrl, &q, &seen)
-
+	
+	for i := range numWorkers {
+		go worker(i, jobs, &seen, maxCrawlPages, done)
+		fmt.Printf("Worker %d created\n", i)
 	}
+	
+	jobs <- initialUrl
+
+	<-done
 
 	fmt.Println(seen.Elements)
 
@@ -43,15 +38,22 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine
 */
-func worker(url string, q* datastructures.Queue, seen* datastructures.Set) {
+func worker(id uint8, ch chan string, seen* datastructures.Set, maxCrawlPages uint16, done chan bool) {
 
+	url := <- ch
 
-	scrapePageInParallel(url, q, seen)
+	fmt.Printf("Worker {%d} received url: %s\n", id, url)
+
+	scrapePageInParallel(url, ch, seen)
+
+	if len(ch) == 0 || seen.Length >= int(maxCrawlPages) {
+		done <- true
+	}
 
 
 }
 
-func scrapePageInParallel(url string, q* datastructures.Queue, seen* datastructures.Set) {
+func scrapePageInParallel(url string, ch chan string, seen* datastructures.Set) {
 
 	res, err := http.Get(url)
 
@@ -68,11 +70,12 @@ func scrapePageInParallel(url string, q* datastructures.Queue, seen* datastructu
 		fmt.Println("Error fetching data")
 	}
 
-	parseHtmlInsideWorker(url, body, q, seen)
+	fmt.Printf("Start parsing html: %s\n", url)
+	parseHtmlInsideWorker(url, body, ch, seen)
 
 }
 
-func parseHtmlInsideWorker(url string, content []byte, q* datastructures.Queue, seen* datastructures.Set) {
+func parseHtmlInsideWorker(url string, content []byte, ch chan string, seen* datastructures.Set) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
@@ -94,7 +97,8 @@ func parseHtmlInsideWorker(url string, content []byte, q* datastructures.Queue, 
 				ok, url := getLink(token)
 
 				if ok && !seen.Contains((url)) {
-					q.Enqueue(url)
+					ch <- url
+					fmt.Printf("Added url %s to the channel\n", url)
 				}
 			}
 
