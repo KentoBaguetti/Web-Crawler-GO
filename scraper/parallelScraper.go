@@ -17,25 +17,51 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	defer fmt.Println("Finished ParallelCrawl")
 
 	var wg sync.WaitGroup
-
-	jobs := make(chan string, 10)
+	jobs := make(chan string, 100) // Buffered channel to prevent blocking
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
 	
+	// Add initial URL to seen set and jobs channel
 	jobs <- initialUrl
-
 	
+	// Keep track of active workers
+	activeWorkers := 0
+	var mu sync.Mutex // Mutex to protect activeWorkers count
+	
+	// Process URLs from the jobs channel
 	for url := range jobs {
+		mu.Lock()
+		if activeWorkers >= int(numWorkers) || seen.Length >= int(maxCrawlPages) {
+			// If we've reached our worker limit or page limit, just discard extra URLs
+			mu.Unlock()
+			continue
+		}
+		
+		activeWorkers++
+		mu.Unlock()
+		
 		wg.Add(1)
-		fmt.Println("Making worker")
-		go worker(&wg, url, jobs, &seen)
+		fmt.Println("Created worker for:", url)
+		
+		// Start a worker goroutine for this URL
+		go func(url string) {
+			defer wg.Done()
+			defer func() {
+				mu.Lock()
+				activeWorkers--
+				mu.Unlock()
+			}()
+
+			if !seen.Contains(url) {
+				worker(url, jobs, &seen)
+			}
+		}(url)
 	}
-
-
+	
+	// This goroutine will close the jobs channel when all workers are done
 	go func() {
 		wg.Wait()
 		close(jobs)
 	}()
-
 }
 
 /**
@@ -52,15 +78,13 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine
 */
-func worker(wg* sync.WaitGroup, url string, jobs chan string, seen* datastructures.Set) {
-
-	defer wg.Done()
-
-
-
+func worker( url string, jobs chan string, seen *datastructures.Set) {
+    // Now implement your worker logic
+    scrapePageInParallel(url, jobs, seen)
+	seen.Add(url)
 }
 
-func scrapePageInParallel(url string, jobs chan string, seen* datastructures.Set) {
+func scrapePageInParallel(url string, jobs chan string, seen *datastructures.Set) {
 
 	res, err := http.Get(url)
 
@@ -82,7 +106,7 @@ func scrapePageInParallel(url string, jobs chan string, seen* datastructures.Set
 
 }
 
-func parseHtmlInsideWorker(content []byte, jobs chan string, seen* datastructures.Set) {
+func parseHtmlInsideWorker(content []byte, jobs chan string, seen *datastructures.Set) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
