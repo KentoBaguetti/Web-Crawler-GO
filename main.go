@@ -17,11 +17,11 @@ func main() {
 	//testLink := "https://en.wikipedia.org/wiki/Japan"
 	// testLink := "https://www.cs.ubc.ca/"
 	testLink := "https://en.wikipedia.org/wiki/Computer_science"
-	//keywords := [2]string{"computer", "science"}
+	// keywords := [2]string{"computer", "science"}
 
-	// scraper.Crawl(testLink, 100, 2500, keywords[:])
+	// scraper.Crawl(testLink, 50, 2500, keywords[:])
 
-	scraper.ParallelCrawl(testLink, 2, 100, 2500)
+	scraper.ParallelCrawl(testLink, 100, 50, 2500)
 
 	t := time.Now()
 

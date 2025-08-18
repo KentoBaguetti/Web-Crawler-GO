@@ -106,7 +106,12 @@ func ParseHTML(url string, content []byte, maxTokens uint16, q* datastructures.Q
 
 				ok, url := getLink(token)
 
-				if ok && HasKeyWords(url, keywords) {
+				// if ok && HasKeyWords(url, keywords) {
+				// 	q.Enqueue(url)
+				// 	linksNo++
+				// }
+
+				if ok  {
 					q.Enqueue(url)
 					linksNo++
 				}

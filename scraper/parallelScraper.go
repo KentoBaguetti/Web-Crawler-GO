@@ -17,20 +17,17 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 
 	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
-	jobs := make(chan string, 2)
+	// jobs := make(chan string, 2)
 	done := make(chan bool)
 
-	
+	q.Enqueue(initialUrl)
+
 	for i := range numWorkers {
+		fmt.Println("Create worker: ", i)
 		go worker(i, &q, &seen, maxCrawlPages, done)
-		fmt.Printf("Worker %d created\n", i)
 	}
-	
-	jobs <- initialUrl
 
-	<-done
-
-	fmt.Println(seen.Elements)
+	<- done
 
 }
 
@@ -50,22 +47,20 @@ Design:
 */
 func worker(id uint8, q* datastructures.Queue, seen* datastructures.Set, maxCrawlPages uint16, done chan bool) {
 
-	url := q.Dequeue()
-
-	fmt.Printf("Worker {%d} received url: %s\n", id, url)
-
-	scrapePageInParallel(url, q, seen)
-
 	for q.Length > 0 {
-		newUrl := q.Dequeue()
-		scrapePageInParallel(newUrl, q, seen)
-	}
+		url := q.Dequeue()
+		seen.Add(url)
+		// fmt.Printf("Worker {%d} is parsing URL: %s\n", id, url)
+		scrapePageInParallel(url, q, seen)
 
-	if q.Length == 0 || seen.Length >= int(maxCrawlPages) {
-		done <- true
-	}
+		fmt.Println(seen.Length)
 
-	
+		if seen.Length > int(maxCrawlPages) {
+			done <- true
+			break
+		}
+
+	}
 
 }
 
@@ -86,7 +81,7 @@ func scrapePageInParallel(url string, q* datastructures.Queue, seen* datastructu
 		fmt.Println("Error fetching data")
 	}
 
-	fmt.Printf("Start parsing html: %s\n", url)
+	// fmt.Printf("Start parsing html: %s\n", url)
 	parseHtmlInsideWorker(url, body, q, seen)
 
 }
@@ -114,7 +109,7 @@ func parseHtmlInsideWorker(url string, content []byte, q* datastructures.Queue, 
 
 				if ok && !seen.Contains((url)) {
 					q.Enqueue(url)
-					fmt.Printf("Added url %s to the channel\n", url)
+					// fmt.Printf("Added url %s to the channel\n", url)
 				}
 			}
 
