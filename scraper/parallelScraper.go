@@ -15,13 +15,14 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	fmt.Println("Start ParallelCrawl")
 	defer fmt.Println("Finished ParallelCrawl")
 
+	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
-	jobs := make(chan string, numWorkers)
+	jobs := make(chan string, 2)
 	done := make(chan bool)
 
 	
 	for i := range numWorkers {
-		go worker(i, jobs, &seen, maxCrawlPages, done)
+		go worker(i, &q, &seen, maxCrawlPages, done)
 		fmt.Printf("Worker %d created\n", i)
 	}
 	
@@ -39,6 +40,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	Need to find a way to prevent this, such as store urls in a queue first, then populate the channel once it channel only has x
 	urls left in it.
 	Or make a goroutine for every single url (this will probably be too expensive to do)
+	Or 
 */
 
 
@@ -46,23 +48,28 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine
 */
-func worker(id uint8, ch chan string, seen* datastructures.Set, maxCrawlPages uint16, done chan bool) {
+func worker(id uint8, q* datastructures.Queue, seen* datastructures.Set, maxCrawlPages uint16, done chan bool) {
 
-	for url := range ch {
+	url := q.Dequeue()
 
 	fmt.Printf("Worker {%d} received url: %s\n", id, url)
 
-	scrapePageInParallel(url, ch, seen)
+	scrapePageInParallel(url, q, seen)
 
-	if len(ch) == 0 || seen.Length >= int(maxCrawlPages) {
+	for q.Length > 0 {
+		newUrl := q.Dequeue()
+		scrapePageInParallel(newUrl, q, seen)
+	}
+
+	if q.Length == 0 || seen.Length >= int(maxCrawlPages) {
 		done <- true
 	}
 
-	}
+	
 
 }
 
-func scrapePageInParallel(url string, ch chan string, seen* datastructures.Set) {
+func scrapePageInParallel(url string, q* datastructures.Queue, seen* datastructures.Set) {
 
 	res, err := http.Get(url)
 
@@ -80,11 +87,11 @@ func scrapePageInParallel(url string, ch chan string, seen* datastructures.Set) 
 	}
 
 	fmt.Printf("Start parsing html: %s\n", url)
-	parseHtmlInsideWorker(url, body, ch, seen)
+	parseHtmlInsideWorker(url, body, q, seen)
 
 }
 
-func parseHtmlInsideWorker(url string, content []byte, ch chan string, seen* datastructures.Set) {
+func parseHtmlInsideWorker(url string, content []byte, q* datastructures.Queue, seen* datastructures.Set) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
@@ -106,7 +113,7 @@ func parseHtmlInsideWorker(url string, content []byte, ch chan string, seen* dat
 				ok, url := getLink(token)
 
 				if ok && !seen.Contains((url)) {
-					ch <- url
+					q.Enqueue(url)
 					fmt.Printf("Added url %s to the channel\n", url)
 				}
 			}
