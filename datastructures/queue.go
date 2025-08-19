@@ -32,3 +32,10 @@ func (q *Queue) Size() int {
 
 	return q.Length
 }
+
+func (q* Queue) IsEmpty() bool {
+	q.Mux.Lock()
+	defer q.Mux.Unlock()
+
+	return q.Length == 0
+}
