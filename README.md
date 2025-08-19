@@ -49,13 +49,13 @@ Workers would then receive new URls to parse by receiving from the channel.
 I built this project because I was previously only building fullstack webapps, which was starting to get a bit repetitive.
 So I decided to build this simple project to get my foot into backend/systems. <br>
 
-I chose to build the project in GO as I found the its goroutines to be a an easy way to start building programs that require concurrency.
+I chose to build the project in GO as I found the its goroutines to be an easy way to start building programs that require concurrency.
 It is also lightweight for crawling, as I was able to build the project with simple packages without the requirement of anything heavy like Colly.
 Building it with lightweight packages allowed me to understand more of smaller components of crawling. Because of its simplicity, I can also scale it in the future quite easily. <br>
 
 The crawler uses the Breadth-First Search algorithm, that way links that are "closer" to the initial link are searched first. After I'd like to try out different search algorithms, such as combining BFS with DFS, changing algorithm based on certain conditions. <br>
 
-I also will implement a database to store the scraped links. <br><br>
+I will also implement a database to store the scraped links. <br><br>
 
 ### Things I want to add:
 
