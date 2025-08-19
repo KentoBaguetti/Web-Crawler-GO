@@ -7,12 +7,17 @@ matching links with BFS until certain end conditions are met. <br>
 
 There are two different scrapers:
 
-1. **Single Thread Web Scraper:** Processes pages one at a time. Processes 100 pages (2500 tokens per page) in ~25 seconds
-2. **Parallel Web Scraper:** Processes pages in parallel. Process 100 pages (2500 tokens per page) in ~1.5 seconds
+1. **Single Thread Web Crawler :** Processes pages one at a time. Processes 100 pages (2500 tokens per page) in ~25 seconds
+2. **Parallel Web Crawler:** Processes pages in parallel. Process 100 pages (2500 tokens per page) in ~1.5 seconds
 
 ## How it works
 
+### Diagram of how the Web Crawler works
+
 ![UML Diagram of the Web Crawler](./images/webcrawler%20v0.png)
+
+### High level diagram of how the Parallel Web Crawler works
+
 ![UML Diagram of the Parallel Crawler](./images/parallelCrawler.png)
 
 1. net/http - fetch pages
