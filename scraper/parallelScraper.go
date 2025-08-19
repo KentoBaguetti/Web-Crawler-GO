@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
 	"golang.org/x/net/html"
@@ -16,54 +17,66 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	fmt.Println("Start ParallelCrawl")
 	defer fmt.Println("Finished ParallelCrawl")
 
-	var wg sync.WaitGroup
-	jobs := make(chan string, 100) // Buffered channel to prevent blocking
+	jobs := make(chan string, 100)
+	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
-	
-	// Add initial URL to seen set and jobs channel
-	jobs <- initialUrl
-	
-	// Keep track of active workers
-	activeWorkers := 0
-	var mu sync.Mutex // Mutex to protect activeWorkers count
-	
-	// Process URLs from the jobs channel
-	for url := range jobs {
-		mu.Lock()
-		if activeWorkers >= int(numWorkers) || seen.Length >= int(maxCrawlPages) {
-			// If we've reached our worker limit or page limit, just discard extra URLs
-			mu.Unlock()
-			continue
-		}
-		
-		activeWorkers++
-		mu.Unlock()
-		
-		wg.Add(1)
-		fmt.Println("Created worker for:", url)
-		
-		// Start a worker goroutine for this URL
-		go func(url string) {
-			defer wg.Done()
-			defer func() {
-				mu.Lock()
-				activeWorkers--
-				mu.Unlock()
-			}()
+	var wg sync.WaitGroup
+	var qMux sync.Mutex
 
-			if !seen.Contains(url) {
-				worker(url, jobs, &seen)
+	q.Enqueue(initialUrl)
+
+	for i := uint8(0); i < numWorkers; i++ {
+		id := i
+		wg.Add(1)
+		go func() {
+			fmt.Printf("Made worker {%d}\n", id)
+			defer wg.Done()
+			worker(maxTokensPerPage, jobs, &q, &qMux, &seen)
+		}()
+	}
+
+	// this goroutine feeds the jobs channel from the queue
+	wg.Add(1)
+	go func() {
+		// fmt.Println(1)
+		defer wg.Done()
+		for {
+			// fmt.Println(2)
+			qMux.Lock()
+			if !q.IsEmpty() && len(jobs) < 100 && seen.Length < int(maxCrawlPages) {
+				// fmt.Println(3)
+				job := q.Dequeue()
+				qMux.Unlock()
+				jobs <- job
+				// fmt.Println(4)
+			} else {
+				// fmt.Println(5)
+				shouldClose := seen.Length >= int(maxCrawlPages)
+				qMux.Unlock()
+
+				// fmt.Println(6)
+				if shouldClose {
+					// fmt.Println(7)
+					close(jobs)
+					break
+				}
+				// fmt.Println(8)
+
+
+				time.Sleep(100 * time.Millisecond)
+
 			}
-		}(url)
+			
+		}
+	}()
+
+	wg.Wait()
+	fmt.Println(seen.Elements)
+	fmt.Println("seen length: ", seen.Length)
+	fmt.Println("queue length: ", q.Length)
+	
 	}
 	
-	// This goroutine will close the jobs channel when all workers are done
-	go func() {
-		wg.Wait()
-		close(jobs)
-	}()
-}
-
 /**
 	The reason why it is currently not working is because when the jobs channel is being added to, once it reaches its capactity
 	it blocks the goroutine from moving on.
@@ -78,18 +91,24 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine
 */
-func worker( url string, jobs chan string, seen *datastructures.Set) {
-    // Now implement your worker logic
-    scrapePageInParallel(url, jobs, seen)
-	seen.Add(url)
+func worker(maxTokensPerPage uint16, jobs chan string, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
+
+	for url := range jobs {
+		fmt.Printf("Received job: %s\ns", url)
+		scrapePageInParallel(url, maxTokensPerPage, q, qMux, seen)
+		qMux.Lock()
+		seen.Add(url)
+		qMux.Unlock()
+	}
+
 }
 
-func scrapePageInParallel(url string, jobs chan string, seen *datastructures.Set) {
+func scrapePageInParallel(url string, maxTokensPerPage uint16, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
 
 	res, err := http.Get(url)
 
 	if err != nil {
-		fmt.Println("Error fetching data")
+		// fmt.Println("Error fetching data")
 		return
 	}
 
@@ -98,40 +117,40 @@ func scrapePageInParallel(url string, jobs chan string, seen *datastructures.Set
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		fmt.Println("Error fetching data")
+		// fmt.Println("Error fetching data")
 	}
 
 	// fmt.Printf("Start parsing html: %s\n", url)
-	parseHtmlInsideWorker(body, jobs, seen)
+	parseHtmlInsideWorker(body, maxTokensPerPage, q, qMux, seen)
 
 }
 
-func parseHtmlInsideWorker(content []byte, jobs chan string, seen *datastructures.Set) {
+func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
 
-	for tokens < 2500 {
+	for tokens < maxTokensPerPage {
 
 		tt := z.Next()
 
 		if tt == html.ErrorToken {
-			fmt.Println("Error processing token")
+			// fmt.Println("Error processing token")
 			return
 		}
 
 		token := z.Token()
 
-		if token.Type == html.StartTagToken {
+		if token.Type == html.StartTagToken && token.Data == "a" {
 
-			if token.Data == "a" {
 				ok, url := getLink(token)
 
-				if ok && !seen.Contains((url)) {
-					jobs <- url
+				if ok && !seen.Contains(url) {
+						qMux.Lock()
+						q.Enqueue(url)
+						qMux.Unlock()
 					// fmt.Printf("Added url %s to the channel\n", url)
-				}
-			}
+				}	
 
 		}
 
