@@ -3,11 +3,17 @@
 ## Web cralwer
 
 A webscrawler that takes in an initial url and and array of keywords, and searches for other links on the page with matching keywords. The crawler then searches
-matching links with BFS until certain end conditions are met.
+matching links with BFS until certain end conditions are met. <br>
+
+There are two different scrapers:
+
+1. **Single Thread Web Scraper:** Processes pages one at a time. Processes 100 pages (2500 tokens per page) in ~25 seconds
+2. **Parallel Web Scraper:** Processes pages in parallel. Process 100 pages (2500 tokens per page) in ~1.5 seconds
 
 ## How it works
 
-![UML Diagram](./images/webcrawler%20v0.png)
+![UML Diagram of the Web Crawler](./images/webcrawler%20v0.png)
+![UML Diagram of the Parallel Crawler](./images/parallelCrawler.png)
 
 1. net/http - fetch pages
 2. golang.org/x/net/html - parse html
