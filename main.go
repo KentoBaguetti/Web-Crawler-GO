@@ -22,7 +22,7 @@ func main() {
 	// scraper.Crawl(testLink, 50, 2500, keywords[:])
 
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
-	scraper.ParallelCrawl(testLink, 100, 50, 2500)
+	scraper.ParallelCrawl(testLink, 16, 100, 2500)
 
 	t := time.Now()
 
