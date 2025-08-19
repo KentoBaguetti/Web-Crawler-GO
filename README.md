@@ -2,7 +2,7 @@
 
 ## Web cralwer
 
-A webscrawler that takes in an initial url and and array of keywords, and searches for other links on the page with matching keywords. The crawler then searches
+A single and multithreaded webcrawler that takes in an initial url and and array of keywords, and searches for other links on the page with matching keywords. The crawler then searches
 matching links with BFS until certain end conditions are met. <br>
 
 There are two different scrapers:
@@ -20,9 +20,29 @@ There are two different scrapers:
 
 ![UML Diagram of the Parallel Crawler](./images/parallelWebcrawler.png)
 
+#### How and Why I designed the parallel web crawler the way I did:
+
+I wanted to be able to process multiple pages simultaneously which is where I decided between two different ways of parallism.
+
+1. I could create a goroutine for every page
+2. I could create a set number of goroutines (workers)
+
+I decided on the latter, as making a separate goroutine for every page can be expensive as the number of goroutines will grow exponentially.
+Along with a set number of goroutines, I also used a buffer channel, that way I could use it like a queue but with the advantages of a channel.
+I originally set up the program so that the workers would send and receive new urls to the jobs channel. This caused a deadlock as once the channel reached its maximum
+capacity, the workers would block as there was no worker receiving from the channel.
+I solved this issue by implementing a classic queue structure.
+Workers would only send new URLs to the queue, this prevented the deadlock caused by the workers sending and receiving to the same channel.
+The queue would then populate the channel by dequeing a URL and sending it to the job channel when the job channel was not blocked.
+Workers would then receive new URls to parse by receiving from the channel.
+
+#### Packages used
+
 1. net/http - fetch pages
 2. golang.org/x/net/html - parse html
 3. sync - concurrency
+4. HashSet - For O(1) look ups
+5. Queue - Data structure used for Breadth-First Search
 
 ### Why I built this and what I learned
 
@@ -39,6 +59,6 @@ I also will implement a database to store the scraped links. <br><br>
 
 ### Things I want to add:
 
-- Use the worker pool pattern to be able to process multple Urls simultaneousely
+- Use the worker pool pattern to be able to process multple Urls simultaneousely - Added
 - Feed the data into an inverted index db in mongo
 - Add a more refined version of keyword matching
