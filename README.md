@@ -18,7 +18,7 @@ There are two different scrapers:
 
 ### High level diagram of how the Parallel Web Crawler works
 
-![UML Diagram of the Parallel Crawler](./images/parallelCrawler.png)
+![UML Diagram of the Parallel Crawler](./images/parallelWebcrawler.png)
 
 1. net/http - fetch pages
 2. golang.org/x/net/html - parse html
