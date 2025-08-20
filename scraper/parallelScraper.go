@@ -76,20 +76,11 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	fmt.Println("queue length: ", q.Length)
 	
 	}
-	
-/**
-	The reason why it is currently not working is because when the jobs channel is being added to, once it reaches its capactity
-	it blocks the goroutine from moving on.
-	Need to find a way to prevent this, such as store urls in a queue first, then populate the channel once it channel only has x
-	urls left in it.
-	Or make a goroutine for every single url (this will probably be too expensive to do)
-	Or 
-*/
-
 
 /**
 Design:
-	worker arguments should be fed from a buffer, each worker should then run on its own goroutine
+	worker arguments should be fed from a buffer, each worker should then run on its own goroutine.
+	Workers feed into a separate queue, this way there is no send-receive blocking
 */
 func worker(maxTokensPerPage uint16, jobs chan string, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
 
