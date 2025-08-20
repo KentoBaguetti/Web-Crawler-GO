@@ -22,7 +22,7 @@ There are two different scrapers:
 
 #### How and Why I designed the parallel web crawler the way I did:
 
-I wanted to be able to process multiple pages simultaneously which is where I decided between two different ways of parallism.
+I wanted to be able to process multiple pages simultaneously which is where I decided between two different ways of parallelism.
 
 1. I could create a goroutine for every page
 2. I could create a set number of goroutines (workers)
