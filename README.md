@@ -2,8 +2,8 @@
 
 ## Web cralwer
 
-A single and multithreaded webcrawler that takes in an initial url and and array of keywords, and searches for other links on the page with matching keywords. The crawler then searches
-matching links with BFS until certain end conditions are met. <br>
+A single and multithreaded webcrawler that takes in an initial url and an array of keywords, and searches for other links on the page with matching keywords. The crawler then searches
+matching links with BFS until certain terminating conditions are met. <br>
 
 There are two different scrapers:
 
@@ -22,7 +22,7 @@ There are two different scrapers:
 
 #### How and Why I designed the parallel web crawler the way I did:
 
-I wanted to be able to process multiple pages simultaneously which is where I decided between two different ways of parallelism.
+I wanted to be able to process multiple pages simultaneously, which is where I decided between two different ways of parallelism.
 
 1. I could create a goroutine for every page
 2. I could create a set number of goroutines (workers)
