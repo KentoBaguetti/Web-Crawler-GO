@@ -62,3 +62,4 @@ I will also implement a database to store the scraped links. <br><br>
 - Use the worker pool pattern to be able to process multple Urls simultaneousely - Added
 - Feed the data into an inverted index db in mongo
 - Add a more refined version of keyword matching
+- Be able to parse for specific information from a page
