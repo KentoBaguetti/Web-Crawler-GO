@@ -4,8 +4,8 @@ import "sync"
 
 type Queue struct {
 	Elements []string
-	Length int
-	Mux sync.Mutex
+	Length   int
+	Mux      sync.Mutex
 }
 
 func (q *Queue) Enqueue(element string) {
@@ -33,7 +33,7 @@ func (q *Queue) Size() int {
 	return q.Length
 }
 
-func (q* Queue) IsEmpty() bool {
+func (q *Queue) IsEmpty() bool {
 	q.Mux.Lock()
 	defer q.Mux.Unlock()
 
