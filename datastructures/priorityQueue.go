@@ -13,3 +13,18 @@ type PriorityQueue struct {
 	MinHeap  bool
 	Mux      sync.Mutex
 }
+
+func (pq *PriorityQueue) Heapify() {
+	pq.Mux.Lock()
+	defer pq.Mux.Unlock()
+}
+
+func (pq *PriorityQueue) Pop() {
+	pq.Mux.Lock()
+	defer pq.Mux.Unlock()
+}
+
+func (pq *PriorityQueue) Append(element ScoreValue) {
+	pq.Mux.Lock()
+	defer pq.Mux.Unlock()
+}
