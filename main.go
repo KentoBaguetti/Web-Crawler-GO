@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
+	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
 )
 
 func main() {
@@ -22,6 +22,7 @@ func main() {
 		fmt.Println("Error reading url from terminal.")
 		return
 	}
+	fmt.Println(givenUrl)
 
 	//testLink := "https://en.wikipedia.org/wiki/Japan"
 	// testLink := "https://www.cs.ubc.ca/"
@@ -31,7 +32,15 @@ func main() {
 	// scraper.Crawl(testLink, 50, 2500, keywords[:])
 
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
-	scraper.ParallelCrawl(givenUrl, 16, 100, 2500)
+	// scraper.ParallelCrawl(givenUrl, 16, 100, 2500)
+
+	pq := datastructures.CreatePriorityQueue(false)
+	pq.Append("Kentaro", 55)
+	pq.Append("Barnes", 10)
+	for i, _ := range pq.Elements {
+		fmt.Printf("Size of PQ: %d\n", pq.Size())
+		fmt.Printf("%d, %s\n", i, pq.Pop().Value)
+	}
 
 	t := time.Now()
 
