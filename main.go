@@ -39,7 +39,11 @@ func main() {
 	pq.Append("Barnes", 10)
 	for i, _ := range pq.Elements {
 		fmt.Printf("Size of PQ: %d\n", pq.Size())
-		fmt.Printf("%d, %s\n", i, pq.Pop().Value)
+		item, err := pq.Pop()
+		if err != nil {
+			continue
+		}
+		fmt.Printf("%d, %s\n", i, item.Value)
 	}
 
 	t := time.Now()
