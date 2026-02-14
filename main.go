@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/KentoBaguetti/Web-Crawler-GO/datastructures"
+	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
 )
 
 func main() {
@@ -32,19 +32,19 @@ func main() {
 	// scraper.Crawl(testLink, 50, 2500, keywords[:])
 
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
-	// scraper.ParallelCrawl(givenUrl, 16, 100, 2500)
+	scraper.ParallelCrawl(givenUrl, 16, 100, 2500)
 
-	pq := datastructures.CreatePriorityQueue(false)
-	pq.Append("Kentaro", 55)
-	pq.Append("Barnes", 10)
-	for i, _ := range pq.Elements {
-		fmt.Printf("Size of PQ: %d\n", pq.Size())
-		item, err := pq.Pop()
-		if err != nil {
-			continue
-		}
-		fmt.Printf("%d, %s\n", i, item.Value)
-	}
+	// pq := datastructures.CreatePriorityQueue(false)
+	// pq.Append("Kentaro", 55)
+	// pq.Append("Barnes", 10)
+	// for i, _ := range pq.Elements {
+	// 	fmt.Printf("Size of PQ: %d\n", pq.Size())
+	// 	item, err := pq.Pop()
+	// 	if err != nil {
+	// 		continue
+	// 	}
+	// 	fmt.Printf("%d, %s\n", i, item.Value)
+	// }
 
 	t := time.Now()
 
