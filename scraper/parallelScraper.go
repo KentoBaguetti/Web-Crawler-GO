@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,60 +13,67 @@ import (
 	"golang.org/x/net/html"
 )
 
-func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, maxTokensPerPage uint16) {
+func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, maxTokensPerPage uint16, keywords []string) {
 
 	fmt.Println("Start ParallelCrawl")
 	defer fmt.Println("Finished ParallelCrawl")
 
 	jobs := make(chan string, 100)
-	q := datastructures.Queue{Elements: make([]string, 0), Length: 0}
+	pq := datastructures.CreatePriorityQueue(false) // max-heap
 	seen := datastructures.Set{Elements: make(map[string]bool), Length: 0}
 	var wg sync.WaitGroup
 	var qMux sync.Mutex
 
-	inFlight := 0 // semaphore style counter, counting how many urls are currently being processed, protected by qMux
+	inFlight := 0 // number of urls currently being processed, protected by qMux
+	initialUrl = strings.TrimSpace(initialUrl)
+	if initialUrl == "" {
+		fmt.Println("Empty URL provided.")
+		return
+	}
+	if maxCrawlPages == 0 {
+		fmt.Println("maxCrawlPages is 0. Nothing to crawl.")
+		return
+	}
 
-	q.Enqueue(initialUrl)
+	seen.Add(initialUrl)
+	pq.Append(initialUrl, CalculateKeywordScore(initialUrl, keywords))
 
+	// create workers
 	for i := uint8(0); i < numWorkers; i++ {
 		id := i
 		wg.Add(1)
 		go func() {
 			fmt.Printf("Made worker {%d}\n", id)
 			defer wg.Done()
-			worker(maxTokensPerPage, jobs, &q, &qMux, &seen, &inFlight)
+			worker(maxTokensPerPage, maxCrawlPages, jobs, pq, &qMux, &seen, &inFlight, keywords)
 		}()
 	}
 
 	// this goroutine feeds the jobs channel from the queue
 	wg.Add(1)
 	go func() {
-		// fmt.Println(1)
 		defer wg.Done()
 		for {
-			// fmt.Println(2)
 			qMux.Lock()
-			// max number of pages to search is currently hardcoded here, change later
-			if !q.IsEmpty() && len(jobs) < 100 && seen.Size() < int(maxCrawlPages) {
-				// fmt.Println(3)
-				job := q.Dequeue()
-				inFlight++
-				qMux.Unlock()
-				jobs <- job
-				// fmt.Println(4)
-			} else {
-				// fmt.Println(5)
-				shouldClose := seen.Size() >= int(maxCrawlPages) || (q.Size() == 0 && inFlight == 0)
-				qMux.Unlock()
-
-				// fmt.Println(6)
-				if shouldClose {
-					// fmt.Println(7)
+			if pq.Length > 0 && len(jobs) < cap(jobs) {
+				scoreValueObj, err := pq.Pop()
+				if err != nil {
+					fmt.Println("Error with popping from pq")
+					qMux.Unlock()
 					close(jobs)
-					// seen.Mux.Unlock() // this is a temp fix, should check if the mux is locked before unlocking as it can cause a panic
 					break
 				}
-				// fmt.Println(8)
+				inFlight++
+				qMux.Unlock()
+				jobs <- scoreValueObj.Value
+			} else {
+				shouldClose := pq.Length == 0 && inFlight == 0
+				qMux.Unlock()
+
+				if shouldClose {
+					close(jobs)
+					break
+				}
 
 				time.Sleep(100 * time.Millisecond)
 
@@ -75,11 +83,17 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	}()
 
 	wg.Wait()
-	fmt.Println(seen.GetElements())
-	fmt.Println("seen length: ", seen.Size())
-	// q.Mux.Lock()
-	fmt.Println("queue length: ", q.Size())
-	// q.Mux.Unlock()
+	qMux.Lock()
+
+	i := 1
+	for url := range seen.Elements {
+		fmt.Printf("\n%d: %s\n", i, url)
+		i++
+	}
+
+	fmt.Println("seen length: ", seen.Length)
+	fmt.Println("pq length: ", pq.Length)
+	qMux.Unlock()
 
 }
 
@@ -90,14 +104,11 @@ Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine.
 	Workers feed into a separate queue, this way there is no send-receive blocking
 */
-func worker(maxTokensPerPage uint16, jobs chan string, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set, inFlight *int) {
+func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, inFlight *int, keywords []string) {
 
 	for url := range jobs {
 		fmt.Printf("Received job: %s\n", url)
-		qMux.Lock()
-		seen.Add(url)
-		qMux.Unlock()
-		scrapePageInParallel(url, maxTokensPerPage, q, qMux, seen)
+		scrapePageInParallel(url, maxTokensPerPage, maxCrawlPages, pq, qMux, seen, keywords)
 		qMux.Lock()
 		*inFlight--
 		qMux.Unlock()
@@ -105,12 +116,12 @@ func worker(maxTokensPerPage uint16, jobs chan string, q *datastructures.Queue, 
 
 }
 
-func scrapePageInParallel(url string, maxTokensPerPage uint16, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
+func scrapePageInParallel(url string, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, keywords []string) {
 
 	res, err := http.Get(url)
 
 	if err != nil {
-		// fmt.Println("Error fetching data")
+		fmt.Println("Error fetching data:", err)
 		return
 	}
 
@@ -119,15 +130,14 @@ func scrapePageInParallel(url string, maxTokensPerPage uint16, q *datastructures
 	body, err := io.ReadAll(res.Body)
 
 	if err != nil {
-		// fmt.Println("Error fetching data")
+		return
 	}
 
-	// fmt.Printf("Start parsing html: %s\n", url)
-	parseHtmlInsideWorker(body, maxTokensPerPage, q, qMux, seen)
+	parseHtmlInsideWorker(body, maxTokensPerPage, maxCrawlPages, pq, qMux, seen, keywords)
 
 }
 
-func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, q *datastructures.Queue, qMux *sync.Mutex, seen *datastructures.Set) {
+func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, keywords []string) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
@@ -147,11 +157,16 @@ func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, q *datastruc
 
 			ok, url := getLink(token)
 
-			if ok && !seen.Contains(url) {
+			if ok {
 				qMux.Lock()
-				q.Enqueue(url)
+				if seen.Length < int(maxCrawlPages) {
+					if _, exists := seen.Elements[url]; !exists {
+						seen.Elements[url] = true
+						seen.Length++
+						pq.Append(url, CalculateKeywordScore(url, keywords))
+					}
+				}
 				qMux.Unlock()
-				// fmt.Printf("Added url %s to the channel\n", url)
 			}
 
 		}

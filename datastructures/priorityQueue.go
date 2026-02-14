@@ -7,7 +7,7 @@ import (
 
 type ScoreValue struct {
 	Score int
-	Value any
+	Value string
 }
 
 type PriorityQueue struct {
@@ -51,7 +51,7 @@ func (pq *PriorityQueue) Pop() (ScoreValue, error) {
 
 }
 
-func (pq *PriorityQueue) Append(value any, score int) {
+func (pq *PriorityQueue) Append(value string, score int) {
 	pq.Mux.Lock()
 	defer pq.Mux.Unlock()
 

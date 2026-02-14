@@ -27,7 +27,11 @@ func KeywordPriorityCrawler(initialUrl string, keywords []string, numWorkers, ma
 
 func CalculateKeywordScore(s string, keywords []string) (score int) {
 
+	s = strings.ToLower(s)
+
 	for _, word := range keywords {
+
+		word = strings.ToLower(word)
 		if strings.Contains(s, word) {
 			score++
 		}
