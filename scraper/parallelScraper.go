@@ -26,7 +26,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 
 	searchedUrls := datastructures.Queue{Elements: make([]string, 0), Length: 0}
 
-	inFlight := 0 // number of urls currently being processed, protected by qMux
+	inFlight := 0 // number of urls currently being processed, protected by qMux, like a semaphore
 	initialUrl = strings.TrimSpace(initialUrl)
 	if initialUrl == "" {
 		fmt.Println("Empty URL provided.")
@@ -59,7 +59,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 		for {
 			qMux.Lock()
 			// fmt.Println(1)
-			if pq.Length > 0 && len(jobs) < cap(jobs) {
+			if pq.Length > 0 && len(jobs) < cap(jobs) { // check if the channel has space so it doesn't block immediately
 				scoreValueObj, err := pq.Pop()
 				if err != nil {
 					// fmt.Println(2)
@@ -71,10 +71,10 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 				// fmt.Println(3)
 				inFlight++
 				qMux.Unlock()
-				jobs <- scoreValueObj.Value
+				jobs <- scoreValueObj.Value // feed the job queue/channel
 			} else {
 				// fmt.Println(4)
-				shouldClose := pq.Length == 0 && inFlight == 0
+				shouldClose := pq.Length == 0 && inFlight == 0 // break condition
 				qMux.Unlock()
 
 				// fmt.Println(5)
@@ -114,6 +114,7 @@ Design:
 */
 func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, inFlight *int, searchedUrls *datastructures.Queue, keywords []string) {
 
+	// worker constanly feeds off the jobs channel until its empty
 	for url := range jobs {
 		fmt.Printf("Received job: %s\n", url)
 		scrapePageInParallel(url, maxTokensPerPage, maxCrawlPages, pq, qMux, seen, searchedUrls, keywords)
@@ -124,6 +125,7 @@ func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq 
 
 }
 
+// can and should remove this function later
 func scrapePageInParallel(url string, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, searchedUrls *datastructures.Queue, keywords []string) {
 
 	res, err := http.Get(url)
@@ -150,6 +152,7 @@ func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPage
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
 
+	// check all tokens
 	for tokens < maxTokensPerPage {
 
 		tt := z.Next()
@@ -161,6 +164,7 @@ func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPage
 
 		token := z.Token()
 
+		// if the token is an anchor tag, add the url to search
 		if token.Type == html.StartTagToken && token.Data == "a" {
 
 			ok, url := getLink(token)
