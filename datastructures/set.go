@@ -6,8 +6,8 @@ import "sync"
 
 type Set struct {
 	Elements map[string]bool
-	Length int
-	Mux sync.Mutex
+	Length   int
+	Mux      sync.Mutex
 }
 
 func (s *Set) Add(url string) {
@@ -33,5 +33,7 @@ func (s *Set) Contains(url string) bool {
 }
 
 func (s *Set) Size() int {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
 	return s.Length
 }
