@@ -37,3 +37,9 @@ func (s *Set) Size() int {
 	defer s.Mux.Unlock()
 	return s.Length
 }
+
+func (s *Set) GetElements() map[string]bool {
+	s.Mux.Lock()
+	defer s.Mux.Unlock()
+	return s.Elements
+}

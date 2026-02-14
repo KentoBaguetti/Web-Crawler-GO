@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
@@ -12,12 +13,12 @@ import (
 func main() {
 
 	fmt.Println("Init main")
-	start := time.Now()
 	defer fmt.Println("Finished main")
 
 	r := bufio.NewReader(os.Stdin)
 	fmt.Print("Enter a link you want to search: ")
 	givenUrl, err := r.ReadString('\n')
+	givenUrl = strings.TrimSpace(givenUrl)
 	if err != nil {
 		fmt.Println("Error reading url from terminal.")
 		return
@@ -32,7 +33,8 @@ func main() {
 	// scraper.Crawl(testLink, 50, 2500, keywords[:])
 
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
-	scraper.ParallelCrawl(givenUrl, 16, 100, 2500)
+	start := time.Now()
+	scraper.ParallelCrawl(givenUrl, 16, 100, 1000)
 
 	// pq := datastructures.CreatePriorityQueue(false)
 	// pq.Append("Kentaro", 55)
