@@ -69,7 +69,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 					break
 				}
 				// fmt.Println(3)
-				inFlight++
+				inFlight++ // incrament sempahore thing
 				qMux.Unlock()
 				jobs <- scoreValueObj.Value // feed the job queue/channel
 			} else {
@@ -119,7 +119,7 @@ func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq 
 		fmt.Printf("Received job: %s\n", url)
 		scrapePageInParallel(url, maxTokensPerPage, maxCrawlPages, pq, qMux, seen, searchedUrls, keywords)
 		qMux.Lock()
-		*inFlight--
+		*inFlight-- // finsished parsing a page so decrement the semaphore
 		qMux.Unlock()
 	}
 
