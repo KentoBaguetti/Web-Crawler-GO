@@ -13,7 +13,7 @@ import (
 	"golang.org/x/net/html"
 )
 
-func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, maxTokensPerPage uint16, keywords []string) {
+func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, maxTokensPerPage uint16, keywords *[]string) {
 
 	fmt.Println("Start ParallelCrawl")
 	defer fmt.Println("Finished ParallelCrawl")
@@ -39,7 +39,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 
 	seen.Add(initialUrl)
 	searchedUrls.Enqueue(initialUrl)
-	pq.Append(initialUrl, CalculateKeywordScore(initialUrl, keywords))
+	pq.Append(initialUrl, CalculateKeywordScore(initialUrl, *keywords))
 
 	// create workers
 	for i := uint8(0); i < numWorkers; i++ {
@@ -112,7 +112,7 @@ Design:
 	worker arguments should be fed from a buffer, each worker should then run on its own goroutine.
 	Workers feed into a separate queue, this way there is no send-receive blocking
 */
-func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, inFlight *int, searchedUrls *datastructures.Queue, keywords []string) {
+func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, inFlight *int, searchedUrls *datastructures.Queue, keywords *[]string) {
 
 	// worker constanly feeds off the jobs channel until its empty
 	for url := range jobs {
@@ -126,7 +126,7 @@ func worker(maxTokensPerPage uint16, maxCrawlPages uint16, jobs chan string, pq 
 }
 
 // can and should remove this function later
-func scrapePageInParallel(url string, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, searchedUrls *datastructures.Queue, keywords []string) {
+func scrapePageInParallel(url string, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, searchedUrls *datastructures.Queue, keywords *[]string) {
 
 	res, err := http.Get(url)
 
@@ -147,7 +147,7 @@ func scrapePageInParallel(url string, maxTokensPerPage uint16, maxCrawlPages uin
 
 }
 
-func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, searchedUrls *datastructures.Queue, keywords []string) {
+func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPages uint16, pq *datastructures.PriorityQueue, qMux *sync.Mutex, seen *datastructures.Set, searchedUrls *datastructures.Queue, keywords *[]string) {
 
 	z := html.NewTokenizer(bytes.NewReader(content))
 	var tokens uint16 = 0
@@ -175,7 +175,7 @@ func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPage
 					if _, exists := seen.Elements[url]; !exists {
 						searchedUrls.Enqueue(url)
 						seen.Add(url)
-						pq.Append(url, CalculateKeywordScore(url, keywords))
+						pq.Append(url, CalculateKeywordScore(url, *keywords))
 					}
 				}
 				qMux.Unlock()

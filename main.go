@@ -35,7 +35,7 @@ func main() {
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
 	start := time.Now()
 	keywords := []string{"tv"}
-	scraper.ParallelCrawl(givenUrl, 16, 100, 1000, keywords)
+	scraper.ParallelCrawl(givenUrl, 16, 100, 1000, &keywords)
 
 	// pq := datastructures.CreatePriorityQueue(false)
 	// pq.Append("Kentaro", 55)
