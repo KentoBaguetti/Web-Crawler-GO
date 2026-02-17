@@ -59,7 +59,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 		for {
 			qMux.Lock()
 			// fmt.Println(1)
-			if pq.Length > 0 && len(jobs) < cap(jobs) { // check if the channel has space so it doesn't block immediately
+			if pq.Size() > 0 && len(jobs) < cap(jobs) { // check if the channel has space so it doesn't block immediately
 				scoreValueObj, err := pq.Pop()
 				if err != nil {
 					// fmt.Println(2)
@@ -74,7 +74,7 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 				jobs <- scoreValueObj.Value // feed the job queue/channel
 			} else {
 				// fmt.Println(4)
-				shouldClose := pq.Length == 0 && inFlight == 0 // break condition
+				shouldClose := pq.Size() == 0 && inFlight == 0 // break condition
 				qMux.Unlock()
 
 				// fmt.Println(5)
@@ -99,8 +99,8 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 		fmt.Printf("\n%d: %s\n", i+1, url)
 	}
 
-	fmt.Println("seen length: ", seen.Length)
-	fmt.Println("pq length: ", pq.Length)
+	fmt.Println("seen length: ", seen.Size())
+	fmt.Println("pq length: ", pq.Size())
 	qMux.Unlock()
 
 }
@@ -171,7 +171,7 @@ func parseHtmlInsideWorker(content []byte, maxTokensPerPage uint16, maxCrawlPage
 
 			if ok {
 				qMux.Lock()
-				if seen.Length < int(maxCrawlPages) {
+				if seen.Size() < int(maxCrawlPages) {
 					if _, exists := seen.Elements[url]; !exists {
 						searchedUrls.Enqueue(url)
 						seen.Add(url)
