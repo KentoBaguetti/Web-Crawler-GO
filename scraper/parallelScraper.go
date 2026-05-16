@@ -41,6 +41,11 @@ func ParallelCrawl(initialUrl string, numWorkers uint8, maxCrawlPages uint16, ma
 	searchedUrls.Enqueue(initialUrl)
 	pq.Append(initialUrl, CalculateKeywordScore(initialUrl, *keywords))
 
+	// TODO: create client
+	// TODO: instantiate sessions
+	// TODO: attach sessions to the workers
+	// TODO: modify workers to process with the LLM
+
 	// create workers
 	for i := uint8(0); i < numWorkers; i++ {
 		id := i

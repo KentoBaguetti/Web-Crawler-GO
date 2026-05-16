@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/KentoBaguetti/Web-Crawler-GO/scraper"
+	"github.com/KentoBaguetti/Web-Crawler-GO/llm"
 )
 
 func main() {
@@ -34,8 +34,8 @@ func main() {
 
 	// initialUrl, numWorkers, numLinks to Crawl , maxTokensToSearchPerPage
 	start := time.Now()
-	keywords := []string{"tv"}
-	scraper.ParallelCrawl(givenUrl, 16, 100, 1000, &keywords)
+	// keywords := []string{"tv"}
+	// scraper.ParallelCrawl(givenUrl, 16, 100, 1000, &keywords)
 
 	// pq := datastructures.CreatePriorityQueue(false)
 	// pq.Append("Kentaro", 55)
@@ -48,6 +48,11 @@ func main() {
 	// 	}
 	// 	fmt.Printf("%d, %s\n", i, item.Value)
 	// }
+
+	if err := llm.TestFunction(); err != nil {
+		fmt.Printf("copilot error: %v\n", err)
+		return
+	}
 
 	t := time.Now()
 
